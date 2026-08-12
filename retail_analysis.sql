@@ -223,3 +223,34 @@ SELECT
 FROM online_retail_cleaned
 GROUP BY Day_Of_Week, DAYOFWEEK(OrderDate)
 ORDER BY DAYOFWEEK(OrderDate) ASC;
+
+
+# Price Tier Revenue Breakdown
+SELECT 
+    CASE 
+        WHEN UnitPrice < 5.00 THEN 'Budget (< $5)'
+        WHEN UnitPrice BETWEEN 5.00 AND 15.00 THEN 'Mid-Tier ($5 - $15)'
+        ELSE 'Premium (> $15)'
+    END AS Price_Tier,
+    COUNT(OrderID) AS Total_Items_Sold,
+    ROUND(SUM(UnitPrice), 2) AS Total_Revenue,
+    ROUND(SUM(UnitPrice) * 100.0 / (SELECT SUM(UnitPrice) FROM online_retail_cleaned), 2) AS Revenue_Share_Pct
+FROM online_retail_cleaned
+GROUP BY Price_Tier
+ORDER BY Total_Revenue DESC;
+
+
+
+# Customer retenation and repeated purchases
+WITH Customer_Orders AS (
+    SELECT 
+        CustomerID,
+        COUNT(DISTINCT OrderID) AS Total_Orders
+    FROM online_retail_cleaned
+    GROUP BY CustomerID
+)
+SELECT 
+    COUNT(CustomerID) AS Total_Customers,
+    SUM(CASE WHEN Total_Orders > 1 THEN 1 ELSE 0 END) AS Repeat_Customers,
+    ROUND(SUM(CASE WHEN Total_Orders > 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(CustomerID), 2) AS Repeat_Purchase_Rate_Pct
+FROM Customer_Orders;
